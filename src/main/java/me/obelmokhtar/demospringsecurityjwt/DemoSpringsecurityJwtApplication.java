@@ -7,6 +7,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
 
@@ -15,6 +17,13 @@ public class DemoSpringsecurityJwtApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(DemoSpringsecurityJwtApplication.class, args);
+    }
+
+    // Creer un objet et le placer ds le contexte Spring, afin de l'injecter ds les autres classes
+    @Bean
+    PasswordEncoder getPasswordEncoder(){
+        // utiliser BCrypt comme algorithme de cryptage
+        return new BCryptPasswordEncoder();
     }
 
     @Bean

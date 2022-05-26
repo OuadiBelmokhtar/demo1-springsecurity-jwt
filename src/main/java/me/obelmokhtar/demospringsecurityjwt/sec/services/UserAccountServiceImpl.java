@@ -4,6 +4,7 @@ import me.obelmokhtar.demospringsecurityjwt.sec.entities.AppRole;
 import me.obelmokhtar.demospringsecurityjwt.sec.entities.AppUser;
 import me.obelmokhtar.demospringsecurityjwt.sec.repositories.AppRoleRepository;
 import me.obelmokhtar.demospringsecurityjwt.sec.repositories.AppUserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,20 +13,24 @@ import java.util.List;
 @Service
 @Transactional
 public class UserAccountServiceImpl implements UserAccountService {
-
     private AppUserRepository appUserRepository;
     private AppRoleRepository appRoleRepository;
+    private PasswordEncoder passwordEncoder;
 
     // pr l'injection de dependance
-    public UserAccountServiceImpl(AppUserRepository appUserRepository, AppRoleRepository appRoleRepository) {
+    public UserAccountServiceImpl(AppUserRepository appUserRepository, AppRoleRepository appRoleRepository, PasswordEncoder passwordEncoder) {
         this.appUserRepository = appUserRepository;
         this.appRoleRepository = appRoleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public AppUser addNewUser(AppUser appUser) {
+        String pwd = appUser.getPassword();
+        appUser.setPassword(passwordEncoder.encode(pwd));
         return appUserRepository.save(appUser);
     }
+
 
     @Override
     public AppRole addNewRole(AppRole appRole) {

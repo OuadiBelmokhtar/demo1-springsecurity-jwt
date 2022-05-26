@@ -1,5 +1,6 @@
 package me.obelmokhtar.demospringsecurityjwt.sec.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,8 @@ public class AppUser implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String username;
+    // masquer l'affichage des mots de passe
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     // association unidirectionnel
     @ManyToMany(fetch = FetchType.EAGER)
