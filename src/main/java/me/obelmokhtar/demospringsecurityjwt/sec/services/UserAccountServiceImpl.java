@@ -40,13 +40,13 @@ public class UserAccountServiceImpl implements UserAccountService {
     @Override
     public void addRoleToUser(String roleName, String username) {
         AppRole role = appRoleRepository.findByRoleName(roleName);
-        AppUser user = appUserRepository.findAppUserByUsername(username);
+        AppUser user = appUserRepository.findByUsername(username);
         user.getUserRoles().add(role);
     }
 
     @Override
     public AppUser loadUserByUserName(String username) {
-        return appUserRepository.findAppUserByUsername(username);
+        return appUserRepository.findByUsername(username);
     }
 
     @Override

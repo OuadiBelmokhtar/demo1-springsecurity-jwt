@@ -27,6 +27,7 @@ public class UserAccountRestController {
         return userAccountService.getAllUsers();
     }
 
+
     @PostMapping(path = "/users")
     AppUser addUser(@RequestBody AppUser appUser){
         return userAccountService.addNewUser(appUser);
