@@ -1,26 +1,50 @@
 package me.obelmokhtar.demospringsecurityjwt.sec;
 
+import me.obelmokhtar.demospringsecurityjwt.sec.entities.AppUser;
+import me.obelmokhtar.demospringsecurityjwt.sec.repositories.AppUserRepository;
+import me.obelmokhtar.demospringsecurityjwt.sec.services.UserAccountService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 @Configuration
 @EnableWebSecurity
 public class MySecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private UserAccountService userAccountService;
+
+    public MySecurityConfig(UserAccountService userAccountService) {
+        this.userAccountService = userAccountService;
+    }
 
     // le role de cette mtd c'est de spécifier les autorisations d’accès aux ressources exposées par l’application
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         // autoriser l'accès à ttes les fonctionnalités. Ce qui va ignorer le formulaire
         // d'authentification demandant de saisir le password généré par Spring Security
-         http.authorizeRequests().anyRequest().permitAll();
+        //http.authorizeRequests().anyRequest().permitAll();
 
-        // exiger une authentification pr acceder à chaque resource
-        //http.authorizeRequests().anyRequest().authenticated();
-        // desactiver la protection contre les attaques CSRF
+        // desactiver la protection contre les attaques CSRF, car CSRF est basé sur les sessions,
+        // alors que l'auth stateless ne les utilise pas.
         http.csrf().disable();
+        // demander a Spring de ne pas utiliser les sessions stockées coté serveur
+        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        // autoriser l’accès à la console H2 sans authentification
+        http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
+        // exiger une authentification pr acceder à chaque resource
+        http.authorizeRequests().anyRequest().authenticated();
         // desactiver la protection par defaut contre les frames HTML
         http.headers().frameOptions().disable();
         // afficher le form d'authentification lorsque l'utilisateur n'a pas les droits d'accéder à la resource demandée
@@ -30,7 +54,34 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
     // le role de cette mtd c'est de specifier les utilisateurs qui ont les droits d y acceder
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-    
+        // type d'authentification qui consiste à utiliser la mémoire pr retrouver les utilisateurs et leurs droits d'accès
+        // auth.inMemoryAuthentication();
+        // type d'authentification qui consiste à utiliser des requêtes SQL pr retrouver les utilisateurs et leurs droits d'accès
+        //auth.jdbcAuthentication();
+        // type d'authentification qui consiste à définir notre propre démarche pr retrouver
+        // les utilisateurs et leurs droits d'accès
+        auth.userDetailsService(new UserDetailsService() {
+            // cette mtd sera exécutée par Spring Security just après que l'utilisateur saisi
+            // son username+password. Elle accepte comme argument le username saisi ds le formLogin et retourne
+            // un objet User de Spring représentant le user authentifié
+            @Override
+            public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+                // recuperer les details sur le user authentifié
+                AppUser appUser = userAccountService.loadUserByUserName(username);
+                // charger les roles du user stockés ds la BD ds une collection de type GrantedAuthority
+                Collection<GrantedAuthority> grantedAuthorities = new ArrayList<>();
+                appUser.getUserRoles().forEach(role -> {
+                    //SimpleGrantedAuthority implemente l interface GrantedAuthority
+                    grantedAuthorities.add(new SimpleGrantedAuthority((role.getRoleName())));
+                });
+                // retourner a Spring les details sur le user authentifié(username+password+roles)
+                // à ce point, Spring Security va s'occuper du rest:
+                // - comparer les mots de passe(en utilisant BCrypt)
+                // - comparer les rôles que possède le user avec les droits d'accès que possède la ressource demandée
+                // - autoriser ou bien interdire le user d y accéder
+                return new User(appUser.getUsername(), appUser.getPassword(), grantedAuthorities);
+            }
+        });
     }
 
 }
