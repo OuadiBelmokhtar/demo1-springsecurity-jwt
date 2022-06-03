@@ -1,9 +1,12 @@
 package me.obelmokhtar.demospringsecurityjwt.sec;
 
 import me.obelmokhtar.demospringsecurityjwt.sec.entities.AppUser;
+import me.obelmokhtar.demospringsecurityjwt.sec.filters.JwtAuthenticationFilter;
 import me.obelmokhtar.demospringsecurityjwt.sec.repositories.AppUserRepository;
 import me.obelmokhtar.demospringsecurityjwt.sec.services.UserAccountService;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -32,6 +35,7 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
     // le role de cette mtd c'est de spécifier les autorisations d’accès aux ressources exposées par l’application
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        System.out.println("MySecurityConfig.configure(HttpSecurity http)");
         // autoriser l'accès à ttes les fonctionnalités. Ce qui va ignorer le formulaire
         // d'authentification demandant de saisir le password généré par Spring Security
         //http.authorizeRequests().anyRequest().permitAll();
@@ -49,11 +53,16 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         http.headers().frameOptions().disable();
         // afficher le form d'authentification lorsque l'utilisateur n'a pas les droits d'accéder à la resource demandée
         //http.formLogin();
+        // Enregistrer le filtre
+        //authenticationManagerBean() est un bean injecté sous dessous
+        http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
     }
 
-    // le role de cette mtd c'est de specifier les utilisateurs qui ont les droits d y acceder
+    // Cette mtd sera invoquee par Spring suite a JwtAuthenticationFilter.attemptAuthentication().
+    // Elle permet de recuperer le username+pwd+roles de la BD et de les retourner a Spring sous forme d'un objet User
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        System.out.println("MySecurityConfig.configure(AuthenticationManagerBuilder auth)");
         // type d'authentification qui consiste à utiliser la mémoire pr retrouver les utilisateurs et leurs droits d'accès
         // auth.inMemoryAuthentication();
         // type d'authentification qui consiste à utiliser des requêtes SQL pr retrouver les utilisateurs et leurs droits d'accès
@@ -61,11 +70,13 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         // type d'authentification qui consiste à définir notre propre démarche pr retrouver
         // les utilisateurs et leurs droits d'accès
         auth.userDetailsService(new UserDetailsService() {
-            // cette mtd sera exécutée par Spring Security just après que l'utilisateur saisi
-            // son username+password. Elle accepte comme argument le username saisi ds le formLogin et retourne
+            // cette mtd sera exécutée par Spring Security just après la reception du username+password de
+            // la mtd JwtAuthenticationFilter.attemptAuthentication().
+            // Elle accepte comme argument le username reçu ds la requete(POST /login) ou saisi ds le formLogin et retourne
             // un objet User de Spring représentant le user authentifié
             @Override
             public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+                System.out.println("MySecurityConfig.configure(AuthenticationManagerBuilder auth).loadUserByUsername()");
                 // recuperer les details sur le user authentifié
                 AppUser appUser = userAccountService.loadUserByUserName(username);
                 // charger les roles du user stockés ds la BD ds une collection de type GrantedAuthority
@@ -84,4 +95,9 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         });
     }
 
+    @Bean
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
 }
