@@ -19,10 +19,19 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+/*
+    Filtre requis par Spring Security. Il a pour but de :
+    - recuperer le username+password suite au login de l'utilisateur.
+    - verifier que le username+password saisis par l'utilisateur correspondent à ceux ds la BD.
+    - Si correctes, définir et générer le JWT et l'envoyer ds le header de la response
+ */
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private AuthenticationManager authenticationManager;
+
+    // clef privée utilisé lors de la génération de la signature(crypter) du JWT avant de l'envoyer au client.
+    // Ainsi que lors de la vérification de la signature(décrypter) du JWT lors de la reception d'une requete client.
+    public static final String  SIGNATURE_SECRET="mySecret1234";
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
@@ -60,8 +69,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         // contenant le username+password+roles necessaires pr générer le JWT
         User authenticatedUser = (User) authResult.getPrincipal();
         // pr generer le JWT, il faut calculer la signature via un algorithme soit HMAC ou RSA
-        // Declarer l'algo de calcule de la signature via un secret(mot de passe) à ne pas partager
-        Algorithm hmacAlgo = Algorithm.HMAC256("mySecret1234");
+        // Declarer l'algo de calcule de la signature via un secret(mot de passe ou clé privé) à ne pas partager
+        Algorithm hmacAlgo = Algorithm.HMAC256(SIGNATURE_SECRET);
         // Creer et definir le payload+signature du Access JWT
         String jwtAccessToken = JWT.create()
                 //avec les standards claims:
@@ -89,7 +98,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 // .collect(Collectors.toList()))
                 // calculer la signature et signer le JWT
                 .sign(hmacAlgo);
-        // envoyer les deux tokens ds le corps de la response ds une map en format JSON.
+        // envoyer les deux tokens ds le CORPS de la response ds une map en format JSON.
         // Noter bien que c'est possible de les envoyer ds deux headers ds la response, mais ce n'est pas pratique.
         Map<String, String> idTokens = new HashMap<>();
         idTokens.put("access-token", jwtAccessToken);

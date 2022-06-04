@@ -2,6 +2,7 @@ package me.obelmokhtar.demospringsecurityjwt.sec;
 
 import me.obelmokhtar.demospringsecurityjwt.sec.entities.AppUser;
 import me.obelmokhtar.demospringsecurityjwt.sec.filters.JwtAuthenticationFilter;
+import me.obelmokhtar.demospringsecurityjwt.sec.filters.JwtAuthorizationFilter;
 import me.obelmokhtar.demospringsecurityjwt.sec.repositories.AppUserRepository;
 import me.obelmokhtar.demospringsecurityjwt.sec.services.UserAccountService;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +58,10 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         // Enregistrer le filtre
         //authenticationManagerBean() est un bean injecté sous dessous
         http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
+        // lorsqu'on a plsr filtres qui traitent les requetes reçues, addFilterBefore() permet de bien definir
+        // l'ordre d'exec des filtres. Ds notre cas, on veut intercepter chaque requete reçue
+        // via JwtAuthorizationFilter.doFilterInternal(), alors on va le definir comme le premier a s'executer.
+        http.addFilterBefore(new JwtAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     // Cette mtd sera invoquee par Spring suite a JwtAuthenticationFilter.attemptAuthentication().
