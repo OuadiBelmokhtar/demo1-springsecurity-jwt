@@ -7,6 +7,7 @@ import me.obelmokhtar.demospringsecurityjwt.sec.repositories.AppUserRepository;
 import me.obelmokhtar.demospringsecurityjwt.sec.services.UserAccountService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -49,13 +50,22 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         // autoriser l’accès à la console H2 sans authentification
         http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
+        // autoriser l’accès à cette mtd pr pouvoir renouveler le accessToken sans authentification
+        http.authorizeRequests().antMatchers("/refreshToken/**").permitAll();
+        // le path /login est par defaut autorise par Spring Security
+       // http.authorizeRequests().antMatchers("/login/**").permitAll();
+        // definir les autorisations(roles) d acces aux ressources
+        // NB: la definition des autorisations devraient etre
+        // placees AVANT la ligne http.authorizeRequests().anyRequest().authenticated();, sinon Exception.
+       // http.authorizeRequests().antMatchers(HttpMethod.POST, "/users/**").hasAuthority("ADMIN");
+       // http.authorizeRequests().antMatchers(HttpMethod.GET, "/users/**").hasAuthority("USER");
         // exiger une authentification pr acceder à chaque resource
         http.authorizeRequests().anyRequest().authenticated();
         // desactiver la protection par defaut contre les frames HTML
         http.headers().frameOptions().disable();
         // afficher le form d'authentification lorsque l'utilisateur n'a pas les droits d'accéder à la resource demandée
         //http.formLogin();
-        // Enregistrer le filtre
+        // Enregistrer le filtre JwtAuthenticationFilter
         //authenticationManagerBean() est un bean injecté sous dessous
         http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
         // lorsqu'on a plsr filtres qui traitent les requetes reçues, addFilterBefore() permet de bien definir
