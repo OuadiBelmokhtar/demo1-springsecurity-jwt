@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import me.obelmokhtar.demospringsecurityjwt.sec.JWTUtil;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,7 +41,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
         }else {
             // recuperer le header 'Authorization' qui contient le JWT de chaque requete reçue
-            String authorizationToken = request.getHeader("Authorization");
+            String authorizationToken = request.getHeader(JWTUtil.JWT_HEADER_NAME);
             // verfier que le token existe ds le header et commence par le prefix 'Bearer '.
             // En effet, par convention il existe plsr préfixes(Basic, Bearer, NTML, OAuth2, ...)
             // utilisés par l'authentification HTTP. Le prefix 'Bearer' est utilisé lorsque
@@ -53,7 +54,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     // signer le JWT pr verifier qu il est valable
                     // il faut utiliser le meme secret(clé privé) utilisé pr générer la signature du JWT initial
                     // envoyé au client. C'est pas le cas pr RSA.
-                    Algorithm hmacAlgo = Algorithm.HMAC256(JwtAuthenticationFilter.SIGNATURE_SECRET);
+                    Algorithm hmacAlgo = Algorithm.HMAC256(JWTUtil.SIGNATURE_SECRET);
                     // creer un verifier pr verifier le token JWT
                     JWTVerifier jwtVerifier = JWT.require(hmacAlgo).build();
                     // verifier, parser et retourner le JWT contenant les claims(username, roles, ...)

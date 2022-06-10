@@ -68,14 +68,16 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         // Enregistrer le filtre JwtAuthenticationFilter
         //authenticationManagerBean() est un bean injecté sous dessous
         http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
+        // Enregistrer le filtre JwtAuthorizationFilter
         // lorsqu'on a plsr filtres qui traitent les requetes reçues, addFilterBefore() permet de bien definir
         // l'ordre d'exec des filtres. Ds notre cas, on veut intercepter chaque requete reçue
         // via JwtAuthorizationFilter.doFilterInternal(), alors on va le definir comme le premier a s'executer.
         http.addFilterBefore(new JwtAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
-    // Cette mtd sera invoquee par Spring suite a JwtAuthenticationFilter.attemptAuthentication().
-    // Elle permet de recuperer le username+pwd+roles de la BD et de les retourner a Spring sous forme d'un objet User
+    /* Cette mtd sera invoquee par Spring suite a JwtAuthenticationFilter.attemptAuthentication().
+       Elle permet de recuperer le username+pwd+roles de la BD et de les retourner a Spring sous forme d'un objet User
+     */
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         System.out.println("MySecurityConfig.configure(AuthenticationManagerBuilder auth)");

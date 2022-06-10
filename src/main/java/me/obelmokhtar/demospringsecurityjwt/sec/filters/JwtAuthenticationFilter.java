@@ -3,6 +3,7 @@ package me.obelmokhtar.demospringsecurityjwt.sec.filters;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import me.obelmokhtar.demospringsecurityjwt.sec.JWTUtil;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,27 +28,22 @@ import java.util.stream.Collectors;
     - Si correctes, définir, générer le JWT et le renvoyer au client ds le corps de la response.
  */
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-
     private AuthenticationManager authenticationManager;
-
-    // clef privée utilisé lors de la génération de la signature(crypter) du JWT avant de l'envoyer au client.
-    // Ainsi que lors de la vérification de la signature(décrypter) du JWT lors de la reception d'une requete client.
-    public static final String SIGNATURE_SECRET = "mySecret1234";
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
     }
 
-    // - Invoquée par Spring suite a l'authentification de l'utilisateur soit via une request POST /login ou via formLogin
-    // - permet de recuperer le username+password reçus ds le CORPS de la requete, de les encapsuler ds un objet de type
-    //   UsernamePasswordAuthenticationToken et de le retourner a Spring sous forme d'un objet Authentication.
-    // - Spring va ensuite invoquer MySecurityConfig.configure(AuthenticationManagerBuilder auth).loadUserByUsername() pr
-    //   recup username+pwd+roles de la BD.
-    // - Ensuite Spring va vérifier est-ce que le pwd reçu ds la requête est équivalent à celui récupéré de la BD ;
-    //   si oui, il va invoquer JwtAuthenticationFilter.successfulAuthentication() en passant le résultat d'authentification
-    //   ds le param authResult, pr générer le JWT.
-    // FAIS ATTENTION: la requete POST doit contenir les 2 headers Content-Type=application/x-www-form-urlencoded et
-    //                 Accept=application/json.
+    /* - Invoquée par Spring suite a l'authentification de l'utilisateur soit via une request POST /login ou via formLogin
+       - permet de recuperer le username+password reçus ds le CORPS de la requete, de les encapsuler ds un objet de type
+         UsernamePasswordAuthenticationToken et de le retourner a Spring sous forme d'un objet Authentication.
+       - Spring va ensuite invoquer MySecurityConfig.configure(AuthenticationManagerBuilder auth).loadUserByUsername() pr
+         recup username+pwd+roles de la BD.
+       - Ensuite Spring va vérifier est-ce que le pwd reçu ds la requête est équivalent à celui récupéré de la BD ;
+         si oui, il va invoquer JwtAuthenticationFilter.successfulAuthentication() en passant le résultat d'authentification
+         ds le param authResult, pr générer le JWT.
+       FAIS ATTENTION: la requete POST doit contenir les 2 headers Content-Type=application/x-www-form-urlencoded et Accept=application/json.
+     */
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         System.out.println("JwtAuthenticationFilter.attemptAuthentication");
@@ -60,11 +56,12 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         return authenticationManager.authenticate(usernamePasswordAuthenticationToken);
     }
 
-    // - Invoquée par Spring juste après attemptAuthentication(), lorsque l'authentification(username+password valides)
-    //   est réussite, en passant le résultat d'authentification ds le param authResult.
-    // - Permet de recuperer le User(username+password+roles) authentifié à partir du param authResult
-    // - Générer le JWT en utilisant la biblio auth0 JWT (Java JWT).
-    // - Envoyer le JWT ds le header de la response
+    /* - Invoquée par Spring juste après attemptAuthentication(), lorsque l'authentification(username+password valides)
+         est réussite, en passant le résultat d'authentification ds le param authResult.
+       - Permet de recuperer le User(username+password+roles) authentifié à partir du param authResult
+       - Générer le JWT en utilisant la biblio auth0 JWT (Java JWT).
+       - Envoyer le JWT ds le header de la response
+     */
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         System.out.println("JwtAuthenticationFilter.successfulAuthentication");
@@ -73,7 +70,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         User authenticatedUser = (User) authResult.getPrincipal();
         // pr generer le JWT, il faut calculer la signature via un algorithme soit HMAC ou RSA
         // Declarer l'algo de calcule de la signature via un secret(mot de passe ou clé privé) à ne pas partager
-        Algorithm hmacAlgo = Algorithm.HMAC256(SIGNATURE_SECRET);
+        Algorithm hmacAlgo = Algorithm.HMAC256(JWTUtil.SIGNATURE_SECRET);
         // Creer et definir le payload+signature du Access JWT
         // Noter bien qu'on ne stocke pas le password ds le token JWT
         String jwtAccessToken = JWT.create()
